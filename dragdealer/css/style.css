@@ -7,12 +7,14 @@
   height: 280px;
   overflow: hidden;
 }
+
 #donut-slider .handle {
   position: absolute;
   width: 150%;
   height: 100%;
   cursor: ew-resize;
 }
+
 #donut-slider .value {
   position: absolute;
   top: 50%;
@@ -26,4 +28,37 @@
   font-weight: bold;
   line-height: 100px;
   text-align: center;
+}
+
+#demo-simple-slider {
+  background: #e1e1e1;
+  height: 30px;
+  border-radius: 3px;
+  font-family: sans-serif;
+  position: relative;
+}
+
+#demo-simple-slider .red-bar {
+  height: 30px;
+  font-size: 16px;
+  border-radius: 3px;
+  width: 100px;
+  background: #CC0000;
+  color: #FFF;
+  line-height: 30px;
+  text-align: center;
+}
+
+#demo-simple-slider .handle {
+  position: absolute;
+  top: 0;
+  left: 0;
+  cursor: pointer;
+}
+
+#demo-simple-slider .value {
+  padding: 0 0 0 5px;
+  font-size: 20px;
+  font-weight: bold;
+  line-height: 1.7em;
 }

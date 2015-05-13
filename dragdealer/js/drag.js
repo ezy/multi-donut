@@ -46,3 +46,11 @@ DonutSlider.prototype = {
 };
 
 // Forked from http://codepen.io/skidding/pen/bKvoA/
+
+$(function() {
+  new Dragdealer('demo-simple-slider', {
+    animationCallback: function(x, y) {
+      $('#demo-simple-slider .value').text(Math.round(x * 100));
+    }
+  });
+});
