@@ -1,5 +1,5 @@
 $(function() {
-  var s = new DonutSlider('donut-slider', 30, '#aa0000', '#444');
+  var s = new DonutSlider('sales', 15, '#001A2D', '#fff');
   s.setValue(.5);
 });
 
@@ -47,10 +47,10 @@ DonutSlider.prototype = {
 
 // Forked from http://codepen.io/skidding/pen/bKvoA/
 
-$(function() {
-  new Dragdealer('demo-simple-slider', {
-    animationCallback: function(x, y) {
-      $('#demo-simple-slider .value').text(Math.round(x * 100));
-    }
-  });
-});
+// $(function() {
+//   new Dragdealer('demo-simple-slider', {
+//     animationCallback: function(x, y) {
+//       $('#demo-simple-slider .value').text(Math.round(x * 100));
+//     }
+//   });
+// });
