@@ -1,13 +1,50 @@
-.donut  {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  margin: -140px 0 0 -140px;
-  width: 280px;
-  height: 280px;
-  overflow: hidden;
+.container {
+  position: relative;
+  margin: 0 auto;
+  width: 350px;
+  height: 100%;
 }
-
+#fill {
+  position: absolute;
+  top: 146px;
+  left: 166px;
+  width: 180px;
+  height: 180px;
+  border-radius: 300px;
+  background: #E1E1E1;
+}
+#indicator {
+  position: absolute;
+  top: 51px;
+  left: 51px;
+  width: 80px;
+  height: 80px;
+  border-radius: 300px;
+}
+#indicator.green {
+  background: #005400;
+}
+#profit {
+  position: absolute;
+  top: 145px;
+  left: 166px;
+  width: 181px;
+  height: 181px;
+}
+#sales {
+  position: absolute;
+  top: 131px;
+  left: 153px;
+  width: 208px;
+  height: 208px;
+}
+#overheads {
+  position: absolute;
+  top: 116px;
+  left: 138px;
+  width: 238px;
+  height: 238px;
+}
 /*.donut  {
   background: #e1e1e1;
   height: 30px;
@@ -29,11 +66,21 @@
 
 .handle {
   position: absolute;
-  top: 0;
   left: 0;
   cursor: pointer;
 }
-
+#sales .handle {
+  bottom: -95px;
+  background: #001A2D;
+}
+#overheads .handle {
+  bottom: -120px;
+  background: #1D76B9;
+}
+#profit .handle {
+  bottom: -70px;
+  background: #42A9F7;
+}
 .value {
   padding: 0 0 0 5px;
   font-size: 20px;

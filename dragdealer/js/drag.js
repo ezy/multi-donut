@@ -1,8 +1,15 @@
 $(function() {
-  var s = new DonutSlider('sales', 15, '#001A2D', '#fff');
+  var s = new DonutSlider('sales', 15, '#001A2D', 'transparent');
   s.setValue(.5);
 });
-
+$(function() {
+  var s = new DonutSlider('overheads', 15, '#1D76B9', 'transparent');
+  s.setValue(.5);
+});
+$(function() {
+  var s = new DonutSlider('profit', 15, '#42A9F7', 'transparent');
+  s.setValue(.5);
+});
 ////////////////////////
 
 var DonutSlider = function(elementId, borderSize, color1, color2) {
@@ -46,11 +53,3 @@ DonutSlider.prototype = {
 };
 
 // Forked from http://codepen.io/skidding/pen/bKvoA/
-
-// $(function() {
-//   new Dragdealer('demo-simple-slider', {
-//     animationCallback: function(x, y) {
-//       $('#demo-simple-slider .value').text(Math.round(x * 100));
-//     }
-//   });
-// });
