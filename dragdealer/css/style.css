@@ -1,13 +1,23 @@
-.container {
+#graph {
+  position: absolute;
+  margin: 0 auto;
+  width: 800px;
+  height: 672px;
+}
+#donut-container {
   position: relative;
   margin: 0 auto;
-  width: 350px;
+  width: 100%;
+  height: 100%;
+}
+#stackbar-container {
+  position: relative;
+  margin: 0 auto;
+  width: 40%;
   height: 100%;
 }
 #fill {
   position: absolute;
-  top: 146px;
-  left: 166px;
   width: 180px;
   height: 180px;
   border-radius: 300px;
@@ -21,29 +31,66 @@
   height: 80px;
   border-radius: 300px;
 }
-#indicator.green {
+.green {
   background: #005400;
 }
 #profit {
   position: absolute;
-  top: 145px;
-  left: 166px;
-  width: 181px;
-  height: 181px;
+  top: 128px; /* 4*m */ 
+  left: 496px; /* width - */ 
+  width: 176px;
+  height: 176px;
+  pointer-events: none;
 }
 #sales {
   position: absolute;
-  top: 131px;
-  left: 153px;
+  top: 112px; /* 3.5*m */
+  left: 480px;
   width: 208px;
   height: 208px;
+  pointer-events: none;
 }
-#overheads {
+#overheadsX {
   position: absolute;
-  top: 116px;
-  left: 138px;
-  width: 238px;
-  height: 238px;
+  top: 96px; /* 3*m */
+  left: 464px;
+  width: 240px;
+  height: 240px;
+  pointer-events: none;
+}
+#overheadsY {
+  position: absolute;
+  top: 96px; /* 3*m */
+  left: 464px;
+  width: 240px;
+  height: 240px;
+  pointer-events: none;
+}
+#greencircle1 {
+  position: absolute;
+  top: 144px; /* 4*m */ 
+  left: 556px; /* width - */ 
+  width: 176px;
+  height: 176px;
+  pointer-events: none;
+}
+#greencircle2 {
+  position: absolute;
+}
+#greencircle3 {
+  position: absolute;
+}
+#greencircle4 {
+  position: absolute;
+}
+#greencircle5 {
+  position: absolute;
+}
+#greencircle6 {
+  position: absolute;
+}
+#cbline {
+  z-index: 1500;
 }
 /*.donut  {
   background: #e1e1e1;
@@ -53,6 +100,26 @@
   position: relative;
 }*/
 
+.dragdealer {
+  position: relative;
+  height: 30px;
+  background: #EEE;
+}
+.dragdealer .handle {
+  position: absolute;
+  left: 0;
+  cursor: pointer;
+}
+.slide-bar-wrapper {
+  position: absolute;
+  width: 640px;
+  top: 450px;
+  background: #e6e6e6;
+  display: block;
+  height: 30px;
+  visibility: show;
+  z-index: 1;
+}
 .slide-bar {
   height: 30px;
   font-size: 16px;
@@ -62,28 +129,79 @@
   color: #FFF;
   line-height: 30px;
   text-align: center;
+  z-index: 10;
+  display: none;
 }
 
-.handle {
-  position: absolute;
-  left: 0;
-  cursor: pointer;
+#profit .handle {
+  bottom: 0px;
+  background: #42A9F7;
+  width: 100px;
+  display: none;
 }
 #sales .handle {
-  bottom: -95px;
+  bottom: -320px;
   background: #001A2D;
+  display: none;
 }
 #overheads .handle {
-  bottom: -120px;
+  bottom: -370px;
   background: #1D76B9;
+  transform: rotateX(180);
+  display: none;
 }
-#profit .handle {
-  bottom: -70px;
-  background: #42A9F7;
+/*
+#overheads .handle .dragdealer {
+  background: #e1e1e1;
+  height: 40px;
+  border-radius: 3px;
 }
+*/
 .value {
   padding: 0 0 0 5px;
   font-size: 20px;
   font-weight: bold;
   line-height: 1.7em;
+}
+
+/* following axis styles are for the D3.js slider */
+.axis {
+	font: 10px sans-serif;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	user-select: none;
+}
+
+.axis .domain {
+	fill: #eee;/* none to hide */
+	stroke: #eee; /* set to background colour to hide */
+	stroke-opacity: 1.0; /* .3 */
+	stroke-width: 32px;
+	stroke-linecap: square;
+}
+
+.axis .halo {
+	fill: #eee;/* none to hide */
+	stroke: #eee; /* fff set to background colour to hide */
+	stroke-width: 4px; /* set low so sliders do not overlap, needed to move them! */
+	stroke-linecap: square;
+}
+
+.slider .handle {
+	fill: #000;
+	stroke: #000;
+	stroke-opacity: .5;
+	stroke-width: 1.25px;
+}
+
+.slider .handle text {
+  fill: white;
+  text-align: center;
+  font-size: 18px;
+  cursor: default;
+}
+
+rect.background {
+	cursor: default !important; /* needed because default D3.js cursor for brush is cross-hair */
+	border: 0;
 }

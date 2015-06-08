@@ -1,36 +1,624 @@
-<html>
+<!DOCTYPE html>
+<meta charset="utf-8">
+	<title>Donut Master v3</title>
+	<link rel="stylesheet" type="text/css" href="css/style.css">
+	<script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/jquery/1.10.1/jquery.min.js"></script>
+	<script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/dragdealer/0.9.8/dragdealer.min.js"></script>
+	<script type="text/javascript" src="js/drag2.js"></script>
+<style>
+/* following axis styles are for the D3.js slider */
+.axis {
+	font: 10px sans-serif;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	user-select: none;
+}
 
-<head>
-  <title></title>
-  <link rel="stylesheet" type="text/css" href="css/style.css">
-  <script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
-  <script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/jquery/1.10.1/jquery.min.js"></script>
-  <script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/dragdealer/0.9.8/dragdealer.js"></script>
-  <script type="text/javascript" src="js/drag.js"></script>
-</head>
+.axis .domain {
+	fill: #eee;/* none to hide */
+	stroke: #eee; /* set to background colour to hide */
+	stroke-opacity: 1.0; /* .3 */
+	stroke-width: 32px;
+	stroke-linecap: square;
+}
 
+.axis .halo {
+	fill: #eee;/* none to hide */
+	stroke: #eee; /* fff set to background colour to hide */
+	stroke-width: 4px; /* set low so sliders do not overlap, needed to move them! */
+	stroke-linecap: square;
+}
+
+.slider .handle {
+	fill: #000;
+	stroke: #000;
+	stroke-opacity: .5;
+	stroke-width: 1.25px;
+}
+
+.slider .handle text {
+  fill: white;
+  text-align: center;
+  font-size: 18px;
+  cursor: default;
+}
+
+rect.background {
+	cursor: default !important; /* needed because default D3.js cursor for brush is cross-hair */
+	border: 0;
+}
+</style>
 <body>
-  <div class="container">
-    <div id="fill">
-      <div id="indicator" class="green">
-      </div>
-    </div>
-    <div id="profit" class="donut">
-      <div class="profit handle slide-bar">
-        <span class="value"></span>
-      </div>
-    </div>
-    <div id="sales" class="donut">
-      <div class="sales handle slide-bar">
-        <span class="value"></span>
-      </div>
-    </div>
-    <div id="overheads" class="donut">
-      <div class="overheads handle slide-bar">
-        <span class="value"></span>
-      </div>
-    </div>
-  </div>
-</body>
+<script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
+	<div id="profit" class="donut">
+			<div class="profit dragdealer handle slide-bar">
+			</div>
+	</div>
+	<div id="sales" class="donut">
+		<div class="sales dragdealer handle slide-bar">
+		</div>
+	</div>
+	<div id="overheadsX" class="donut">
+		<div class="overheads dragdealer handle slide-bar">
+		</div>
+	</div>
+	<div id="overheadsY" class="donut">
+		<div class="overheads dragdealer handle slide-bar">
+		</div>
+	</div>
+<script>
+// 0. SET THE CANVAS
+// set all margins
+var graph_width = 800,
+	graph_height = 672,
+	margin_unit = 32,
+	half_margin_unit = margin_unit / 2,
+	margin = {top: 1.5*margin_unit, right: margin_unit, bottom: margin_unit, left: margin_unit},
+	width = graph_width - margin.left - margin.right,
+	height = graph_height - margin.bottom - margin.top,
+	sliderX, sliderY, sliderB, sliderC,
+	handleX, handleY, handleB, handleC,
+	cbLine, init_X = 25, init_Y = 25, init_B = 50, init_C = 50,
+	fill_X = "#1A61AB", fill_Y = "#0D3970", fill_B = "#0F4101", fill_C = "#031422",
+	fill_profit = "#42A9F7", fill_sales = "#001A2D", fill_green = "#005400", fill_red = "#920003",
+	fill_profit_bar = "#176501", gray_bgnd = "#E1E1E1",
+	ch2_x, ch2_y, ch2_z;
 
+// set all ranges for sliders
+var x = d3.scale.linear()
+	.domain([0, 100])
+	.range([0, width-2*margin_unit])
+	.clamp(true);
+
+// set main SVG canvas
+var svg = d3.select("body").append("svg")
+	.attr("width", width + margin.left + margin.right)
+	.attr("height", height + margin.top + margin.bottom)
+	.attr("id", "svgdata")
+	.append("g")
+	.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+// 1. SET THE DONUT CHARTS
+// inner green circle
+var cbCircle = svg.append("circle")
+	.attr("cx",width-6*margin_unit)
+	.attr("cy",5*margin_unit)
+	.attr("r", 1.85*margin_unit)
+	.style("stroke", gray_bgnd) // grey
+	.style("stroke-width",1.8*margin_unit)
+	.style("fill", fill_green) // green
+	.attr("id", "cbcircle");
+
+// three main indicators
+var donutProfit = new DonutSlider('profit', half_margin_unit, fill_profit, 'transparent');
+donutProfit.setValue(.5);
+var donutSales = new DonutSlider('sales', half_margin_unit, fill_sales, 'transparent');
+donutSales.setValue(.5);
+var donutOverheadsX = new DonutSlider('overheadsX', half_margin_unit, fill_X, 'transparent');
+donutOverheadsX.setValue(0.5);
+var donutOverheadsY = new DonutSlider('overheadsY', half_margin_unit, fill_Y, 'transparent');
+donutOverheadsY.setValue(0.25);
+
+// green circles are in an array to easily show or hide them later
+// with just changing their stroke (edge) color to green or the
+// gray background - same as cbCircle stroke color
+var greencircle = [];
+for (i=0; i<6; i++) {
+	greencircle[i] = new oDonut(margin.left,margin.top,width-6*margin_unit,5*margin_unit,(2.2-i*0.22)*margin_unit,0.12*margin_unit,'greencircle'+(i+1).toString());
+}
+
+/*
+$("cbCircle").hide().show(0);
+*/
+var cbLine = svg.append("line")
+	.attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+  .attr("x1", $("#overheadsX").offset().left + 1.5*margin_unit)// .attr("x1", width - 7*margin_unit)
+  .attr("y1", -0.25*margin_unit)
+  .attr("x2", $("#overheadsX").offset().left + 1.5*margin_unit)
+  .attr("y2", 1.25*margin_unit)
+  .style("stroke", fill_red) // red initially
+  .style("stroke-width", "3px")
+  .style("id", "cbline");
+
+// 3. SET THE BAR CHART
+// we need two stacked bar graphs
+// a) first is B-C
+// stacked bar, if C<B show
+var ch_w = 2*margin_unit,
+ch_h = 8*margin_unit;
+
+// create canvas
+var chart1 = svg.append("g")
+  .attr("class", "chart")
+  .attr("width", ch_w)
+  .attr("height", ch_h)
+  .attr("id", "chartBC")
+  .attr("transform", "translate(" + 3*margin_unit + "," + 9*margin_unit + ")");
+
+ch1_x = d3.scale.ordinal().rangeRoundBands([0, ch_w])
+ch1_y = d3.scale.linear().range([0, ch_h])
+ch1_z = d3.scale.ordinal().range([fill_sales, fill_profit_bar, gray_bgnd, gray_bgnd])
+
+var matrix1 = [
+		[ 1,	init_C, init_B, 0, 0],
+];
+var remapped =["c1","c2","c3","c4"].map(function(dat,i){
+  return matrix1.map(function(d,ii){
+    return {x: ii, y: d[i+1] };
+	})
+});
+var stacked = d3.layout.stack()(remapped)
+
+ch1_x.domain(stacked[0].map(function(d) { return d.x; }));
+ch1_y.domain([0, d3.max(stacked[stacked.length - 1], function(d) { return d.y0 + d.y; })]);
+
+// add a group for each column
+var valgroup1 = chart1.selectAll("g.valgroup1")
+  .data(stacked)
+  .enter().append("svg:g")
+  .attr("class", "valgroup")
+  .attr("id", "valgroup1")
+  .style("fill", function(d, i) { return ch1_z(i); });
+//  .style("stroke", function(d, i) { return d3.rgb(ch_z(i)).darker(); });
+// above if needed for area edges
+
+// add a rect for each value
+var rect1 = valgroup1.selectAll("rect")
+  .data(function(d){return d;})
+  .enter().append("svg:rect")
+  .attr("class", "bar1")
+  .attr("x", function(d) { return ch1_x(d.x); })
+  .attr("y", function(d) { return -ch1_y(d.y0) - ch1_y(d.y); })
+  .attr("height", function(d) { return ch1_y(d.y); })
+  .attr("width", ch1_x.rangeBand());
+
+// b) second graph is X-Y
+// create canvas
+var chart2 = svg.append("g")
+  .attr("class", "chart")
+  .style("background-color", gray_bgnd)
+  .attr("width", ch_w)
+  .attr("height", ch_h)
+  .attr("id", "chartXY")
+  .attr("transform", "translate(" + (3*margin_unit + ch_w) + "," + 9*margin_unit + ")");
+
+ch2_x = d3.scale.ordinal().rangeRoundBands([0, ch_w]);
+ch2_y = d3.scale.linear().range([0, ch_h]);
+ch2_z = d3.scale.ordinal().range([fill_Y, fill_X, gray_bgnd, fill_profit]);
+
+var matrix2 = [
+  [ 2, init_X, init_Y, 100-(init_X+init_Y), 0]
+];
+var remapped =["c1","c2","c3","c4"].map(function(dat,i){
+  return matrix2.map(function(d,ii){
+    return {x: ii, y: d[i+1] };
+	})
+});
+var stacked = d3.layout.stack()(remapped)
+
+ch2_x.domain(stacked[0].map(function(d) { return d.x; }));
+ch2_y.domain([0, d3.max(stacked[stacked.length - 1], function(d) { return d.y0 + d.y; })]);
+
+// add a group for each column
+var valgroup2 = chart2.selectAll("g.valgroup2")
+  .data(stacked)
+  .enter().append("svg:g")
+  .attr("class", "valgroup")
+  .attr("id", "valgroup2")
+  .style("fill", function(d, i) { return ch2_z(i); });
+//  .style("stroke", function(d, i) { return d3.rgb(ch_z(i)).darker(); });
+
+// add a rect for each value
+var rect2 = valgroup2.selectAll("rect")
+  .data(function(d){return d;})
+  .enter().append("svg:rect")
+  .attr("class", "bar2")
+  .attr("x", function(d) { return ch2_x(d.x); })
+  .attr("y", function(d) { return -ch2_y(d.y0) - ch2_y(d.y); })
+  .attr("height", function(d) { return ch2_y(d.y); })
+  .attr("width", ch2_x.rangeBand());
+
+
+$( document ).ready(function() {
+
+// 2. CREATE SLIDER BARS (invisible) AND ITS HANDLES
+// set all brushes
+var brushB = d3.svg.brush()
+	.x(x)
+	.extent([0, 0])
+	.on("brush", brushedB);
+var brushC = d3.svg.brush()
+	.x(x)
+	.extent([0, 0])
+	.on("brush", brushedC);
+var brushX = d3.svg.brush()
+	.x(x)
+	.extent([0, 0])
+	.on("brush", brushedX);
+var brushY = d3.svg.brush()
+	.x(x)
+	.extent([0, 0])
+	.on("brush", brushedY);
+
+// set all sliders
+// slider X
+svg.append("g")
+	.attr("class", "x axis")
+	.attr("transform", "translate(" + margin_unit + "," + 11.6*margin_unit + ")")
+	.call(d3.svg.axis()
+	.scale(x)
+	.orient("bottom")
+	.tickFormat(function(d) { return ""; }) // empty string hides the axis ticks
+	.tickSize(0)
+	.tickPadding(12))
+	.select(".domain")
+	.select(function() { return this.parentNode.appendChild(this.cloneNode(true)); })
+	.attr("class", "halo");
+sliderX = svg.append("g")
+	.attr("class", "slider")
+	.call(brushX);
+sliderX.selectAll(".extent,.resize")
+	.remove();
+sliderX.select(".background")
+	.attr("height", margin_unit);
+handleX = sliderX.append("g")
+  .attr("class", "handle");
+handleX.append("rect")
+	.attr("class", "handle")
+	.attr("transform", "translate(0," + 11.6*margin_unit + ")")
+	.attr("width",2.3*margin_unit)
+	.attr("height",margin_unit)
+	.attr("y", -0.5*margin_unit) // align handle on bar
+	.attr("rx", 0.2*margin_unit)
+	.style("stroke-width",0)
+	.style("fill", fill_X)
+	.style("cursor", "hand")
+	.attr("id", "sliderx");
+var textX = handleX.append("text")
+  .attr("transform", "translate(" + (-22+margin_unit) + " ," + (height / 2 - 25 + 3.4*margin_unit) + ")")
+  .text("25%")
+  .attr("fill", 'black').style("font-weight", "bold")
+  .style('alignment-baseline', 'text-before-edge')
+  .style("font-family", "Verdana").style("font-size", "1.2em")
+  .attr("id", "valueX");
+sliderX
+	.call(brushX.event)
+	.transition()
+	.duration(750)
+	.call(brushX.extent([init_X, init_X]))
+	.call(brushX.event);
+
+// slider Y
+svg.append("g")
+	.attr("class", "x axis")
+	.attr("transform", "translate(" + margin_unit + "," + 13.4*margin_unit + ")")
+	.call(d3.svg.axis()
+	.scale(x)
+	.orient("bottom")
+	.tickFormat(function(d) { return ""; })
+	.tickSize(0)
+	.tickPadding(12))
+	.select(".domain")
+	.select(function() { return this.parentNode.appendChild(this.cloneNode(true)); })
+	.attr("class", "halo");
+sliderY = svg.append("g")
+	.attr("class", "slider")
+	.call(brushY);
+sliderY.selectAll(".extent,.resize")
+  .remove();
+sliderY.select(".background")
+  .attr("height", margin_unit);
+handleY = sliderY.append("g")
+  .attr("class", "handle");
+handleY.append("rect")
+	.attr("class", "handle")
+	.attr("transform", "translate(0," + 13.4*margin_unit + ")")
+	.attr("width",2.3*margin_unit)
+	.attr("height",margin_unit)
+	.attr("y", -0.5*margin_unit) // align handle on bar
+	.attr("rx", 0.2*margin_unit)
+	.style("stroke-width",0)
+	.style("fill", fill_Y)
+	.style("cursor", "hand")
+	.attr("id", "slidery");
+var textY = handleY.append("text")
+  .attr("transform", "translate(" + (-22+margin_unit) + " ," + (height / 2 - 25 + 5.2*margin_unit) + ")")
+  .text("25%")
+  .attr("fill", 'black').style("font-weight", "bold")
+  .style('alignment-baseline', 'text-before-edge')
+  .style("font-family", "Verdana").style("font-size", "1.2em")
+  .attr("id", "valueY");
+sliderY
+	.call(brushY.event)
+	.transition()
+	.duration(750)
+	.call(brushY.extent([init_Y, init_Y]))
+	.call(brushY.event);
+
+// slider B
+svg.append("g")
+	.attr("class", "x axis")
+	.attr("transform", "translate(" + margin_unit + "," + 15.2*margin_unit + ")")
+	.call(d3.svg.axis()
+	.scale(x)
+	.orient("bottom")
+	.tickFormat(function(d) { return ""; })
+	.tickSize(0)
+	.tickPadding(12))
+	.select(".domain")
+	.select(function() { return this.parentNode.appendChild(this.cloneNode(true)); })
+	.attr("class", "halo");
+sliderB = svg.append("g")
+	.attr("class", "slider")
+	.call(brushB);
+sliderB.selectAll(".extent,.resize")
+	.remove();
+sliderB.select(".background")
+	.attr("height", margin_unit);
+handleB = sliderB.append("g")
+  .attr("class", "handle")
+  .attr("id", "handleb");
+handleB.append("rect")
+	.attr("class", "handle")
+	.attr("transform", "translate(0," + 15.2*margin_unit + ")")
+	.attr("width",2.3*margin_unit)
+	.attr("height",margin_unit)
+	.attr("y", -0.5*margin_unit) // align handle on bar
+	.attr("rx", 0.2*margin_unit)
+	.style("stroke-width",0)
+	.style("fill", fill_B)
+	.style("cursor", "hand")
+	.attr("id", "sliderb");
+var textB = handleB.append("text")
+  .attr("transform", "translate(" + (-22+margin_unit) + " ," + (height / 2 - 25 + 7*margin_unit) + ")")
+  .text("50%")
+  .attr("fill", 'black').style("font-weight", "bold")
+  .style('alignment-baseline', 'text-before-edge')
+  .style("font-family", "Verdana").style("font-size", "1.2em")
+  .attr("id", "valueB");
+sliderB
+	.call(brushB.event)
+	.transition()
+	.duration(750)
+	.call(brushB.extent([init_B, init_B]))
+	.call(brushB.event);
+
+// slider C
+svg.append("g")
+	.attr("class", "x axis")
+	.attr("transform", "translate(" + margin_unit + "," + 17*margin_unit + ")")
+	.call(d3.svg.axis()
+	.scale(x)
+	.orient("bottom")
+	.tickFormat(function(d) { return ""; })
+	.tickSize(0)
+	.tickPadding(12))
+	.select(".domain")
+	.select(function() { return this.parentNode.appendChild(this.cloneNode(true)); })
+	.attr("class", "halo");
+sliderC = svg.append("g")
+	.attr("class", "slider")
+	.call(brushC);
+sliderC.selectAll(".extent,.resize")
+	.remove();
+sliderC.select(".background")
+	.attr("height", margin_unit);
+handleC = sliderC.append("g")
+  .attr("class", "handle");
+handleC.append("rect")
+	.attr("class", "handle")
+	.attr("transform", "translate(0," + 17*margin_unit + ")")
+	.attr("width",2.3*margin_unit)
+	.attr("height",margin_unit)
+	.attr("y", -0.5*margin_unit) // align handle on bar
+	.attr("rx", 0.2*margin_unit)
+	.style("stroke-width",0)
+	.style("fill", fill_C)
+	.style("cursor", "hand")
+	.attr("x", 0)
+	.attr("id", "sliderc");
+var textC = handleC.append("text")
+  .attr("transform", "translate(" + (-22+margin_unit) + " ," + (height / 2 - 25 + 8.8*margin_unit) + ")")
+  .text("50%")
+  .attr("fill", 'black').style("font-weight", "bold")
+  .style('alignment-baseline', 'text-before-edge')
+  .style("font-family", "Verdana").style("font-size", "1.2em")
+  .attr("id", "valueC");
+sliderC
+	.call(brushC.event)
+	.transition()
+	.duration(750)
+	.call(brushC.extent([init_C, init_C]))
+	.call(brushC.event);
+
+// handle all brush events
+function brushedX() {
+	var value = brushX.extent()[0];
+	if (d3.event.sourceEvent) { // not a programmatic event
+ 	value = x.invert(d3.mouse(this)[0]);
+	}
+	if ((value + brushY.extent()[0]) > 100) { value = 100 - brushY.extent()[0] +0.5}
+	brushX.extent([value, value]);
+  handleX.attr("transform", "translate(" + x(value) + ",0)");
+  valueX.textContent = Math.floor(value) +"%"; // round for X+Y = 100
+	update();
+}
+function brushedY() {
+	var value = brushY.extent()[0];
+	if (d3.event.sourceEvent) { // not a programmatic event
+ 	value = x.invert(d3.mouse(this)[0]);
+	}
+	if ((value + brushX.extent()[0]) > 100) { value = 100 - brushX.extent()[0] +0.5}
+	brushY.extent([value, value]);
+  handleY.attr("transform", "translate(" + x(value) + ",0)");
+  valueY.textContent = Math.floor(value) +"%"; // round for X+Y = 100
+	update();
+}
+function brushedB() {
+	var value = brushB.extent()[0];
+	if (d3.event.sourceEvent) { // not a programmatic event
+ 	value = x.invert(d3.mouse(this)[0]);
+	}
+	if (value <= ((brushX.extent()[0] + brushY.extent()[0]))) {
+	 value = Math.max((brushX.extent()[0] + brushY.extent()[0]));
+	}
+  brushB.extent([value, value]);
+  handleB.attr("transform", "translate(" + x(value) + ",0)");
+	valueB.textContent = (Math.floor(value.toString()) + "%");
+	update();
+}
+function brushedC() {
+	var value = brushC.extent()[0];
+	if (d3.event.sourceEvent) { // not a programmatic event
+	 value = x.invert(d3.mouse(this)[0]);
+	}
+	brushC.extent([value, value]);
+  handleC.attr("transform", "translate(" + x(value) + ",0)");
+  valueC.textContent = (Math.floor(value.toString()) + "%");
+	update();
+}
+
+
+function update() {
+// performs checks and adjust handle, donuts and stacked bar
+var divide, temp, arcPct, newBarBCData, newBarXYData, splitBC;
+// a) respecting constraints of handles
+if (brushC.extent()[0] > brushB.extent()[0]) { // cbCircle, C > B
+  d3.select("#sliderb").style("fill", fill_B); 
+  cbCircle.style("fill", fill_green); // green
+  cbLine.style("stroke", fill_green); // green
+  donutProfit.setValue(Math.min((brushC.extent()[0]/(brushB.extent()[0] + 0.01))-1),1);
+  donutProfit.svg.style("visibility", "visible");
+
+  // now show green circles based on dividing result
+  divide = Math.floor(brushC.extent()[0] / (brushB.extent()[0] + 0.05));
+  // + 0.05 is to avoid dividing by zero
+  if ((Math.floor(brushB.extent()[0]) == 0) && (Math.floor(brushC.extent()[0]) == 0))
+    { divide = 0 } // needed to fix the calculation error
+  for (i=0; i<6; i++) {
+    if (i<divide) {
+      greencircle[i].style("stroke", fill_green) // green
+    } else {
+      greencircle[i].style("stroke", gray_bgnd) // gray, hides a circle
+    }
+  }
+} else { // C <= B
+  d3.select("#sliderb").style("fill", fill_red); 
+  cbCircle.style("fill", fill_red); // red
+  cbLine.style("stroke", fill_red); // red
+  donutProfit.svg.style("visibility", "hidden");
+  greencircle[0].style("stroke", gray_bgnd); // gray, hides a circle
+};
+donutSales.setValue(Math.min(brushC.extent()[0]/brushB.extent()[0],1));
+temp = brushB.extent()[0];
+if ((brushX.extent()[0] + brushY.extent()[0]) > brushB.extent()[0]) {
+  // slider B should move with sum of X+Y up to 100
+  temp = brushX.extent()[0] + brushY.extent()[0];
+  if (temp > 100) { temp = 100; };
+}
+
+$("#valueB").text(Math.floor(temp.toString()) + "%");
+brushB.extent([temp, temp]);
+$("#handleb").attr("transform", "translate(" + x(temp) + ",0)");
+// hack to redraw handle B, if needed
+//$("cbCircle").hide().show(0);
+// now we have X, Y and B values to draw the overheads donut
+// formula is: X+Y = sum, draw sum/B as % of arc of 360 degrees
+// with ratios of X and Y arcs as X/100 * sum/B and Y/100 * sum/B, respectively
+// and adjust both values with a trick because of DonutSlider used (only two
+// values possible, so we draw two donuts one above other with transparency)
+arcPct = (brushX.extent()[0] + brushY.extent()[0])/temp;
+donutOverheadsX.setValue(arcPct);
+donutOverheadsY.setValue(arcPct * (brushY.extent()[0]/(brushX.extent()[0]+brushY.extent()[0])));
+// Y donut is filled simply as a percentage calculated by Y/(X+Y) of donut filled for X (with X+Y)
+
+// finally let's update the stacked bar chart
+if (brushC.extent()[0] > brushB.extent()[0]) { // cbCircle, C > B
+  // first calculate the ration C / B,
+  var divide2 = brushC.extent()[0] / (brushB.extent()[0] + 0.05);
+  var divide2_rounded = Math.floor(divide2);
+  // if divide2 < 1 then it fills up to 50%
+  if (divide2_rounded < 2) {
+    splitBC = ((divide2-1)/2) * 100; // map 0-0.99 to 0-49.9
+    newBarBCData = [
+      [ 1, (100-splitBC), splitBC, 0, 0],
+    ];
+  }
+  else {
+  // else it fills divide2 / (divide2+1) bar share
+    splitBC = ((divide2_rounded-1)/divide2_rounded) * 100 +
+      (((divide2-2)/((divide2_rounded+1)*2)) * (100/divide2_rounded)); // map 2-6+ to 50% + ..., 66% + etc 
+    newBarBCData = [
+      [ 1, (100-splitBC), splitBC, 0, 0],
+    ];
+  }
+  newBarXYData = [
+    [ 2, brushY.extent()[0], brushX.extent()[0], 0, 100-(brushX.extent()[0]+brushY.extent()[0])]
+  ];
+  //console.log("divide2: " + divide2 + " - divide2_rounded: " + divide2_rounded + " - splitBC: " + splitBC);
+} else { // C <= B
+  newBarBCData = [
+    [ 1, brushC.extent()[0], 0, 100-brushC.extent()[0], 0],
+  ];
+  newBarXYData = [
+    [ 2, brushY.extent()[0], brushX.extent()[0], 100-(brushX.extent()[0]+brushY.extent()[0]), 0]
+  ];
+};
+
+// remap data for B-C stacked bar graph 
+remapped =["c1","c2","c3","c4"].map(function(dat,i){
+  return newBarBCData.map(function(d,ii){
+    return {x: ii, y: d[i+1] };
+	})
+});
+stacked = d3.layout.stack()(remapped);
+valgroup1 = chart1.selectAll("#valgroup1")
+  .data(stacked);
+rect1 = valgroup1.selectAll("rect")
+  .data(function(d){return d;})
+  .attr("y", function(d) { return -ch1_y(d.y0) - ch1_y(d.y); })
+  .attr("height", function(d) { return ch1_y(d.y); });
+// and remap data for X-Y stacked bar graph
+remapped =["c1","c2","c3","c4"].map(function(dat,i){
+  return newBarXYData.map(function(d,ii){
+    return {x: ii, y: d[i+1] };
+	})
+});
+stacked = d3.layout.stack()(remapped);
+valgroup2 = chart2.selectAll("#valgroup2")
+  .data(stacked);
+rect2 = valgroup2.selectAll("rect")
+  .data(function(d){return d;})
+  .attr("y", function(d) { return -ch2_y(d.y0) - ch2_y(d.y); })
+  .attr("height", function(d) { return ch2_y(d.y); });
+
+//$("chartXY").hide().show(0);
+}
+
+// start initial chart
+update();
+});
+
+</script>
+</body>
 </html>

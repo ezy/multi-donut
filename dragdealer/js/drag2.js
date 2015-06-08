@@ -1,17 +1,3 @@
-$(function() {
-  var s = new DonutSlider('sales', 15, '#001A2D', 'transparent');
-  s.setValue(.5);
-});
-$(function() {
-  var s = new DonutSlider('overheads', 15, '#1D76B9', 'transparent');
-  s.setValue(.5);
-});
-$(function() {
-  var s = new DonutSlider('profit', 15, '#42A9F7', 'transparent');
-  s.setValue(.5);
-});
-////////////////////////
-
 var DonutSlider = function(elementId, borderSize, color1, color2) {
   var _this = this,
     size = Math.min($('#' + elementId).width(),
@@ -37,14 +23,14 @@ var DonutSlider = function(elementId, borderSize, color1, color2) {
     x: 1,
     slide: false,
     animationCallback: function(x, y) {
-      _this.updateChart((1 - x) * 100);
-      $('#' + elementId).find('.value').text(Math.round((1 - x) * 100));
+      _this.updateChart((x) * 100);
+//      $('#' + elementId).find('.value').text(Math.round((x) * 100));
     }
   });
 };
 DonutSlider.prototype = {
   setValue: function(value) {
-    this.dragdealer.setValue(1 - value, 0, true);
+    this.dragdealer.setValue(value, 0, true);
   },
   updateChart: function(value) {
     this.path.data(this.pie([value, 100 - value]))
@@ -53,3 +39,18 @@ DonutSlider.prototype = {
 };
 
 // Forked from http://codepen.io/skidding/pen/bKvoA/
+
+var oDonut = function(marginl, margint, cx, cy, r, R, classname) {
+  this.svg = d3.select("#svgdata")
+    .append('g')
+    .attr('transform', "translate(" + marginl + "," + margint + ")")
+    .append("circle")
+    .attr('cx', cx)
+    .attr('cy', cy)
+    .attr('r', r)
+    .attr('fill', "transparent")
+    .style("stroke", "#E1E1E1") // green is #005400
+    .style("stroke-width", R)
+    .attr("id", '#' + classname);
+  return this.svg;
+};  
