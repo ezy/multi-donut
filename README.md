@@ -1,5 +1,9 @@
 # multi-donut
 
+![multi-donut demo](https://i.imgur.com/CNsSOSI.png "Multi-donut")
+
+Demo: https://codepen.io/ezy/pen/GJZPxP
+
 1. Slider handles go over the edges. For sliders D3.js brushes were used, they are very flexible yet not regarding this missing edges (if handles are not small circles).
 The solution would be drawing rectangles with the same color as slider on slider's edges so that handle would not go pass them.
 
